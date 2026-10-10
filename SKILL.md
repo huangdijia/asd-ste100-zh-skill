@@ -156,7 +156,13 @@ metadata:
 - **可选改进**：只有用户要求补充建议或修订内容时，另列新增建议；这些建议不算原文的等义改写。
 - 不声称“符合官方中文 STE”“零歧义”“经 ASD 认证”或“机器检测已证明保真”。
 
-详细的原版映射、设计理由和保真示例见 [RULES.zh-CN.md](RULES.zh-CN.md)。验收时读取 [references/acceptance-tests.zh-CN.md](references/acceptance-tests.zh-CN.md)。
+详细的原版映射、设计理由和保真示例见 [RULES.zh-CN.md](references/RULES.zh-CN.md)。验收时读取 [references/acceptance-tests.zh-CN.md](references/acceptance-tests.zh-CN.md)。
+
+## 中文静态检查（可选）
+
+运行 `python3 scripts/ste-lint.py FILE [FILE ...]`，或向 stdin 提供 UTF-8 文本。支持 `--json`、`--disable`、`--baseline`、`--terms` 和 `--selftest`，具体使用及词表格式见 [README](README.md)。仅提示中文列表项尾连接词与用户明确配置的字面词表，不自动改写，不检验条件、情态或事实的语义等价。不得依据零提示宣称保真或官方 STE 合规。
+
+代码、引用、URL 和常见标识等片段受保护；普通 Markdown 的保守遮罩不等于完整语法解析。非中文或全保护内容报告未覆盖，部分覆盖文件也列出未覆盖行。原有 12 个语义用例仍须人工或模型审阅，程序测试不代表这些用例已被模型实际执行。
 
 ## 7. 来源与许可
 
@@ -164,11 +170,12 @@ metadata:
 
 中文规则及测试是本次适配稿的编辑决策，不是上游或 ASD 的原文。上游自述借鉴 ASD-STE100 Issue 9；本稿不复制、翻译或扩充 ASD 官方批准词典，不代替对官方标准的核查。上游仓库的 MIT 许可不等于 ASD 官方标准的许可。
 
-上游归属及 MIT 许可全文如下，另随附于 LICENSE。复制或分发本衍生文件时保留此声明。
+上游内容版权归 Dustin Yuchen Teng；中文适配、新增规则、样例与静态检查代码版权归 huangdijia。上游归属及 MIT 许可全文如下，另随附于 LICENSE。复制或分发本衍生文件时保留此声明。
 
 MIT License
 
 Copyright (c) 2026 Dustin Yuchen Teng
+Copyright (c) 2026 huangdijia
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
