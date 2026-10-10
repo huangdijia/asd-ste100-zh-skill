@@ -47,6 +47,39 @@ DISABLE_TELEMETRY=1 npx skills add huangdijia/asd-ste100-zh-skill
 
 也可以下载仓库后，手动导入支持目录式技能的工具。具体加载方式由所用工具决定。以上是供使用者选择执行的安装说明；仓库不会自行安装技能或修改默认设置。
 
+## 中文静态检查
+
+需要 Python 3.9 或更新版本，仅使用标准库，不自动改写或联网。
+
+```bash
+python3 scripts/ste-lint.py README.md SKILL.md
+printf '%s\n' '- 保存结果且' | python3 scripts/ste-lint.py --json
+python3 scripts/ste-lint.py --disable dangling-conjunction FILE.md
+python3 scripts/ste-lint.py --baseline 2 FILE.md
+python3 scripts/ste-lint.py --terms terms.json FILE.md
+python3 scripts/ste-lint.py --selftest
+python3 -m unittest discover -s tests -v
+python3 scripts/ste-lint.py --json examples/linter-edge-cases.md
+```
+
+两条规则均是人工核对提示：`dangling-conjunction` 检查中文 Markdown 列表项尾的“且/或/和/与/以及/并且/或者”；`configured-term` 只匹配用户明确提供的字面词表，默认没有词表，不推断“检查/验证/确认”同义。不将情态词或分号列为禁词，也不设置汉字长度上限。
+
+末尾连接词规则只看字符，不做分词：列表项“计算总和”“保持温和”“不得苟且”也会提示，应人工忽略或显式禁用该规则；不得把这些词视为错误。Markdown 强调标记不作归一化，`- 保存**且**` 当前不会提示。测试固定记录这些误报/漏报边界，零提示不意味着列表完整。
+
+词表 JSON 必须显式指定 `--terms`，例如下面的项目约定；此提示只是请求核对，不要求删除或替换：
+
+词表项须含中文且不能含 ASCII 字母、数字或下划线；混合中英项（例如“检查API”）直接报配置错误，避免 ASCII 标识保护后产生无法匹配的约定。词表不是通用多语言术语检查器。
+
+```json
+{"terms": [{"term": "本客户端", "message": "请核对是否与项目定义一致"}]}
+```
+
+输出包含文件、1 起算的原文行列（Unicode 字符位置，非字节）、规则 ID、提示、覆盖行与未覆盖行。`--disable` 只接受上述规则 ID。`--baseline N` 允许全批次至多 N 条提示，N 须非负；不会让未覆盖输入变成通过。退出码：0 表示已检查文件的提示数未超过 baseline，1 表示超过，2 表示至少一个文件未覆盖或参数/读取错误；错误写到 stderr，未覆盖信息写入报告。0 不是语义正确或合规的证明。
+
+保护普通 Markdown 代码围栏（区分字符和长度）、成对反引号、四空格/Tab 缩进、引用块、注释、文件头 YAML、链接、URL、引号中的原样字符串、常见路径和 ASCII 标识。遮罩保留原文位置，用占位操作数避免代码删除后产生假缺项。四空格/Tab 续行作为受保护操作数参与列表连续性判断，其内部不接受词表检查；整个链接和引用可能被保守跳过；复杂 Markdown、裸中文标识和不完整标记不保证识别，需将精确标识写在反引号中。非中文、空输入或全部受保护内容报告 `uncovered`，禁用所有可用规则也报告未覆盖；混合文件列出跳过行。这些范围说明不表示其余正文接受了语义分析。
+
+[中文边界样例](examples/linter-edge-cases.md) 预期两条提示、退出码 1；程序测试验证接口与遮罩边界。已有 [12 个语义用例](references/acceptance-tests.zh-CN.md) 仍供独立审阅，未运行中文自动语义测试或真实模型基准。
+
 ## 一个例子
 
 原文：
@@ -92,13 +125,16 @@ DISABLE_TELEMETRY=1 npx skills add huangdijia/asd-ste100-zh-skill
 | 文件 | 内容 |
 |---|---|
 | [SKILL.md](SKILL.md) | 可直接复用的完整规则 |
-| [RULES.zh-CN.md](RULES.zh-CN.md) | 上游核对、规则映射、设计理由、5 个保真示例 |
+| [RULES.zh-CN.md](references/RULES.zh-CN.md) | 上游核对、规则映射、设计理由、5 个保真示例 |
 | [references/acceptance-tests.zh-CN.md](references/acceptance-tests.zh-CN.md) | 12 个语义验收用例 |
-| [LICENSE](LICENSE) | MIT 许可及原作者版权声明 |
+| [scripts/ste-lint.py](scripts/ste-lint.py) | 有限中文静态提示工具 |
+| [tests/test_ste_lint.py](tests/test_ste_lint.py) | 可执行程序行为测试 |
+| [examples/linter-edge-cases.md](examples/linter-edge-cases.md) | 中文静态检查边界样例 |
+| [LICENSE](LICENSE) | MIT 许可及双方版权声明 |
 
 ## 能力边界
 
-本项目目前提供写作规则和人工/模型验收材料，不包含中文自动 linter。验收用例不是机器测试已通过的声明。模型仍可能误读原文，关键技术文本应由了解实际系统的人复核。
+本项目提供写作规则、有限中文静态检查和人工/模型验收材料。静态检查不证明语义等价；原有 12 个语义验收用例不是程序实测或真实模型基准已通过的声明。模型仍可能误读原文，关键技术文本应由了解实际系统的人复核。
 
 原项目的英语 linter 不证明原文与改写语义等价，也不能直接作为中文合格检查器。本项目不复制 ASD 官方批准词典，不保证任何官方 STE 合规。
 
@@ -110,10 +146,12 @@ DISABLE_TELEMETRY=1 npx skills add huangdijia/asd-ste100-zh-skill
 - 固定快照：[32511c6992ecb5f1971e46a2943f2e6adceedafe](https://github.com/danyuchn/asd-ste100-skill/commit/32511c6992ecb5f1971e46a2943f2e6adceedafe)
 - 快照提交时间：2026-10-04；核对时间：2026-10-10
 
-直接读取了上游 SKILL、规则参考、示例、README、linter 和 LICENSE。具体文件链接及不照搬上游部分示例的原因见 [规则说明](RULES.zh-CN.md)。
+直接读取了上游 SKILL、规则参考、示例、README、linter 和 LICENSE。具体文件链接及不照搬上游部分示例的原因见 [规则说明](references/RULES.zh-CN.md)。
 
 ## 许可与归属
 
-上游版权：Copyright (c) 2026 Dustin Yuchen Teng。
+上游内容版权：Copyright (c) 2026 Dustin Yuchen Teng。
+
+中文适配、新增规则、示例和代码版权：Copyright (c) 2026 huangdijia。MIT 全文及原作者版权保留；新增代码借鉴固定上游快照的 CLI 接口，未将英文规则作为中文合格检查。
 
 本项目适配了上游 MIT 许可内容，并保留其 [完整许可](LICENSE)。中文新增规则、示例和编辑选择不应视为上游作者或 ASD 的官方主张。分发本衍生内容时，请保留版权与许可声明。仓库 MIT 许可不代表 ASD 官方标准和词典可以自由复制。
